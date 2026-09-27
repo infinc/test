@@ -1,0 +1,18 @@
+{
+  "name": "iphone-web-mirror",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mirror and remotely control your own iPhone from a web browser via WebDriverAgent",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev:mock": "DRIVER=mock COOKIE_SECURE=false node server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

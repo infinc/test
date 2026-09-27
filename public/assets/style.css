@@ -1,0 +1,378 @@
+:root {
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --text: #1c1c1e;
+  --muted: #6e6e73;
+  --border: #d1d1d6;
+  --accent: #0a84ff;
+  --accent-text: #ffffff;
+  --ok: #248a3d;
+  --error: #d70015;
+  --button-bg: #e5e5ea;
+  --shadow: 0 10px 30px rgb(0 0 0 / 0.15);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --text: #f2f2f7;
+    --muted: #98989d;
+    --border: #38383a;
+    --ok: #30d158;
+    --error: #ff453a;
+    --button-bg: #2c2c2e;
+    --shadow: 0 10px 30px rgb(0 0 0 / 0.6);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--button-bg);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:hover {
+  filter: brightness(0.95);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--accent);
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.topbar .ghost {
+  margin-left: auto;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.status[data-state="ok"]::before {
+  background: var(--ok);
+}
+
+.status[data-state="error"] {
+  color: var(--error);
+}
+
+.status[data-state="error"]::before {
+  background: var(--error);
+}
+
+/* Layout */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.device {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.screen {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  overflow: hidden;
+  border-radius: 28px;
+  background: #000;
+  box-shadow: var(--shadow);
+  outline: 3px solid transparent;
+  transition: outline-color 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.screen:not(.has-frame) {
+  width: min(300px, 80vw);
+  aspect-ratio: 390 / 844;
+}
+
+.screen.busy {
+  outline-color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.screen img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100dvh - 110px);
+  cursor: pointer;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+
+.screen-msg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ripple {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+  animation: ripple 0.6s ease-out forwards;
+}
+
+.ripple-longpress {
+  border-color: #ff9f0a;
+}
+
+.ripple-swipe,
+.ripple-swipe-end {
+  border-color: #bf5af2;
+}
+
+@keyframes ripple {
+  from {
+    opacity: 1;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
+/* Controls */
+.controls {
+  display: grid;
+  gap: 20px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.button-grid button {
+  padding: 0 6px;
+}
+
+.type-form label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.type-row {
+  display: flex;
+  gap: 8px;
+}
+
+.type-row button {
+  flex: none;
+}
+
+.hint {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hint dt {
+  font-weight: 600;
+}
+
+.hint dd {
+  margin: 0;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  max-width: min(480px, calc(100vw - 32px));
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  transform: translateX(-50%);
+  box-shadow: var(--shadow);
+}
+
+.toast[data-error="true"] {
+  background: var(--error);
+  color: #fff;
+}
+
+/* Login */
+.login-page {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.login-card {
+  width: min(360px, 100%);
+  padding: 28px 24px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.login-card form {
+  display: grid;
+  gap: 10px;
+}
+
+.login-card label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.form-error {
+  margin: 0;
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 12px 16px;
+  }
+
+  .screen img {
+    max-height: 70dvh;
+  }
+
+  .screen {
+    border-radius: 20px;
+  }
+}

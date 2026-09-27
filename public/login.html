@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>ログイン - iPhone Mirror</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script type="module" src="/assets/login.js"></script>
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <h1>iPhone Mirror</h1>
+    <p class="muted">アクセス用パスワードを入力してください</p>
+    <form id="login-form">
+      <label for="password">パスワード</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
+      <button type="submit" class="primary">ログイン</button>
+      <p id="login-error" class="form-error" role="alert" hidden></p>
+    </form>
+  </main>
+</body>
+</html>

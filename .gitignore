@@ -1,0 +1,4 @@
+node_modules/
+.env
+wda.log
+.DS_Store

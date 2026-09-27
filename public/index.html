@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>iPhone Mirror</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script type="module" src="/assets/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>iPhone Mirror</h1>
+    <span id="status" class="status" data-state="connecting">確認中…</span>
+    <button id="logout" type="button" class="ghost">ログアウト</button>
+  </header>
+
+  <main class="layout">
+    <section class="device" aria-label="iPhone の画面">
+      <div id="screen" class="screen">
+        <img id="screen-img" alt="iPhone の画面" draggable="false">
+        <p id="screen-msg" class="screen-msg">画面を読み込み中…</p>
+      </div>
+    </section>
+
+    <aside class="controls">
+      <div class="button-grid">
+        <button type="button" data-action="home">ホーム</button>
+        <button type="button" data-action="lock">ロック</button>
+        <button type="button" data-action="unlock">ロック解除</button>
+        <button type="button" data-action="volumeDown">音量 −</button>
+        <button type="button" data-action="volumeUp">音量 +</button>
+        <button type="button" id="reload-stream">再読み込み</button>
+      </div>
+
+      <form id="type-form" class="type-form">
+        <label for="type-text">文字入力(iPhone 側で入力欄を選んでから送信)</label>
+        <div class="type-row">
+          <input id="type-text" type="text" maxlength="500" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button type="submit" class="primary">送信</button>
+        </div>
+      </form>
+
+      <dl class="hint">
+        <dt>クリック / タップ</dt><dd>タップ</dd>
+        <dt>0.5 秒以上押す</dt><dd>長押し</dd>
+        <dt>ドラッグ</dt><dd>スワイプ(指を離した後に再生)</dd>
+      </dl>
+    </aside>
+  </main>
+
+  <p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
+</body>
+</html>
