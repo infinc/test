@@ -10,10 +10,13 @@ env_value() {
 
 IPHONE_UDID="${IPHONE_UDID:-$(env_value IPHONE_UDID)}"
 WDA_PROJECT_DIR="${WDA_PROJECT_DIR:-$(env_value WDA_PROJECT_DIR)}"
+CLOUDFLARE_TUNNEL_NAME="${CLOUDFLARE_TUNNEL_NAME:-$(env_value CLOUDFLARE_TUNNEL_NAME)}"
 WDA_PID=""
 IPROXY_PID=""
+TUNNEL_PID=""
 
 cleanup() {
+  if [ -n "$TUNNEL_PID" ]; then kill "$TUNNEL_PID" 2>/dev/null || true; fi
   if [ -n "$IPROXY_PID" ]; then kill "$IPROXY_PID" 2>/dev/null || true; fi
   if [ -n "$WDA_PID" ]; then kill "$WDA_PID" 2>/dev/null || true; fi
 }
@@ -65,6 +68,16 @@ for _ in $(seq 1 90); do
 done
 if [ -z "$ready" ]; then
   echo "警告: WebDriverAgent が応答しません。サーバーは起動しますが、画面は「未接続」になります" >&2
+fi
+
+if [ -n "$CLOUDFLARE_TUNNEL_NAME" ]; then
+  if ! command -v cloudflared >/dev/null 2>&1; then
+    echo "cloudflared が見つかりません。'brew install cloudflared' を実行してください" >&2
+    exit 1
+  fi
+  echo "Cloudflare Tunnel '$CLOUDFLARE_TUNNEL_NAME' を起動します(ログ: tunnel.log)..."
+  cloudflared tunnel run "$CLOUDFLARE_TUNNEL_NAME" >tunnel.log 2>&1 &
+  TUNNEL_PID=$!
 fi
 
 npm start

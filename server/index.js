@@ -17,11 +17,16 @@ const {
   WDA_MJPEG_URL = 'http://127.0.0.1:9100',
   COOKIE_SECURE = 'true',
   ACCESS_PASSWORD,
+  ORIGIN_SHARED_SECRET,
 } = process.env;
 
 let auth;
 try {
-  auth = createAuth({ password: ACCESS_PASSWORD, secureCookie: COOKIE_SECURE !== 'false' });
+  auth = createAuth({
+    password: ACCESS_PASSWORD,
+    secureCookie: COOKIE_SECURE !== 'false',
+    originSecret: ORIGIN_SHARED_SECRET || undefined,
+  });
 } catch (err) {
   console.error(`起動できません: ${err.message}(.env.example を参照)`);
   process.exit(1);
@@ -42,4 +47,5 @@ createApp({ driver, auth }).listen(Number(PORT), HOST, () => {
   if (driver.name === 'wda') {
     console.log(`  WebDriverAgent: ${WDA_URL} / MJPEG: ${WDA_MJPEG_URL || '無効 (ポーリング表示)'}`);
   }
+  if (ORIGIN_SHARED_SECRET) console.log('  Cloudflare Worker からの中継を受け付けます (ORIGIN_SHARED_SECRET 設定済み)');
 });

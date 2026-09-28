@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 
 export const COOKIE_NAME = 'mirror_session';
 export const MIN_PASSWORD_LENGTH = 12;
+export const MIN_ORIGIN_SECRET_LENGTH = 16;
+export const ORIGIN_SECRET_HEADER = 'x-mirror-origin-secret';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const MAX_FAILURES = 5;
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
@@ -24,12 +26,17 @@ export function createAuth({
   password,
   secureCookie = true,
   secret = crypto.randomBytes(32),
+  originSecret,
   now = Date.now,
 } = {}) {
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
     throw new Error(`ACCESS_PASSWORD を ${MIN_PASSWORD_LENGTH} 文字以上で設定してください`);
   }
+  if (originSecret !== undefined && (typeof originSecret !== 'string' || originSecret.length < MIN_ORIGIN_SECRET_LENGTH)) {
+    throw new Error(`ORIGIN_SHARED_SECRET を ${MIN_ORIGIN_SECRET_LENGTH} 文字以上で設定してください`);
+  }
   const passwordDigest = sha256(password);
+  const originSecretDigest = originSecret === undefined ? null : sha256(originSecret);
   let failures = [];
 
   const sign = (payload) => crypto.createHmac('sha256', secret).update(payload).digest('base64url');
@@ -92,11 +99,15 @@ export function createAuth({
     res.json({ ok: true });
   }
 
+  function hasOriginSecret(req) {
+    const given = req.headers[ORIGIN_SECRET_HEADER];
+    return originSecretDigest !== null && typeof given === 'string' && crypto.timingSafeEqual(sha256(given), originSecretDigest);
+  }
+
   function requireAuth(req, res, next) {
-    if (isAuthenticated(req)) return next();
-    if (req.path.startsWith('/api/') || req.path === '/stream') {
-      return res.status(401).json({ error: 'ログインが必要です' });
-    }
+    const isApi = req.path.startsWith('/api/') || req.path === '/stream';
+    if (isAuthenticated(req) || (isApi && hasOriginSecret(req))) return next();
+    if (isApi) return res.status(401).json({ error: 'ログインが必要です' });
     return res.redirect('/login');
   }
 

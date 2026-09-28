@@ -1,0 +1,24 @@
+name = "iphone-mirror"
+main = "worker/src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+# Mac サーバーを公開している Cloudflare Tunnel の URL(例: https://mirror-origin.example.com)
+ORIGIN_URL = ""
+
+# ログイン試行の制限(IP ごとに 60 秒あたり 5 回)
+[[ratelimits]]
+name = "LOGIN_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60
+
+# secrets(wrangler secret put で登録): ACCESS_PASSWORD, SESSION_SECRET, ORIGIN_SECRET

@@ -8,9 +8,10 @@ import { createWdaDriver } from '../server/drivers/wda.js';
 import { MJPEG_BOUNDARY, startFakeWda } from './fake-wda.js';
 
 const PASSWORD = 'correct-horse-battery';
+const ORIGIN_SECRET = 'shared-origin-secret-123';
 
-async function startApp(driver) {
-  const auth = createAuth({ password: PASSWORD });
+async function startApp(driver, authOptions = {}) {
+  const auth = createAuth({ password: PASSWORD, ...authOptions });
   const server = createApp({ driver, auth }).listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -222,5 +223,44 @@ describe('API with WDA driver', () => {
     assert.match(status.error, /接続できません/);
     assert.equal((await api.post('/api/home')).status, 502);
     assert.equal((await api.get('/stream')).status, 502);
+  });
+});
+
+describe('API behind the Cloudflare Worker (origin shared secret)', () => {
+  let app;
+  let driver;
+
+  before(async () => {
+    driver = createMockDriver();
+    app = await startApp(driver, { originSecret: ORIGIN_SECRET });
+  });
+
+  after(() => app.close());
+
+  const tap = (headers) =>
+    fetch(`${app.base}/api/tap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({ x: 0.5, y: 0.5 }),
+    });
+
+  it('accepts API calls carrying the shared secret without a session cookie', async () => {
+    assert.equal((await tap({ 'X-Mirror-Origin-Secret': ORIGIN_SECRET })).status, 200);
+    assert.equal(driver.getEvents().length, 1);
+  });
+
+  it('rejects a missing or wrong secret', async () => {
+    assert.equal((await tap({})).status, 401);
+    assert.equal((await tap({ 'X-Mirror-Origin-Secret': 'wrong-secret-wrong-secret' })).status, 401);
+    assert.equal(driver.getEvents().length, 1);
+  });
+
+  it('does not let the secret open non-API pages', async () => {
+    const res = await fetch(`${app.base}/`, { headers: { 'X-Mirror-Origin-Secret': ORIGIN_SECRET }, redirect: 'manual' });
+    assert.equal(res.status, 302);
+  });
+
+  it('refuses short shared secrets', () => {
+    assert.throws(() => createAuth({ password: PASSWORD, originSecret: 'short' }), /16 文字以上/);
   });
 });

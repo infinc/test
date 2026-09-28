@@ -10,9 +10,14 @@
   "scripts": {
     "start": "node server/index.js",
     "dev:mock": "DRIVER=mock COOKIE_SECURE=false node server/index.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy"
   },
   "dependencies": {
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.142.0"
   }
 }

@@ -1,7 +1,10 @@
 # iPhone Mirror
 
 自分の iPhone の画面をブラウザに映し、クリック・ドラッグで操作できる個人用 Web アプリです。
-iPhone を USB でつないだ Mac を中継サーバーにし、[Tailscale](https://tailscale.com/) 経由で外出先からアクセスします。
+iPhone を USB でつないだ Mac を中継サーバーにし、外出先からは次のどちらかでアクセスします。
+
+- **Tailscale**(手順 6): インターネットに公開せず、自分の端末からだけアクセス
+- **Cloudflare Workers + Cloudflare Tunnel**([後述](#cloudflare-workers-で公開する)): `*.workers.dev` の URL でどこからでもアクセス(パスワードで保護)
 
 ```
 [iPhone]                          [Mac]                                  [外出先の PC / スマホ]
@@ -105,6 +108,68 @@ Mac 上のブラウザで http://127.0.0.1:3000 を開き、ログインして i
 
 インターネットには公開されず、自分の Tailscale ネットワーク内の端末からだけアクセスできます。
 
+## Cloudflare Workers で公開する
+
+Tailscale の代わりに、Cloudflare Workers を入口にする構成です。Worker はクラウド上で動くので Mac に直接は届かず、
+Mac 側で Cloudflare Tunnel を動かして Worker → Tunnel → Mac サーバーの順に中継します。
+
+```
+[ブラウザ] ─▶ Worker (https://iphone-mirror.<アカウント>.workers.dev)
+               ・ログイン認証(ACCESS_PASSWORD)・画面ファイル配信
+               ・/api と /stream を Mac へ中継(X-Mirror-Origin-Secret ヘッダー付き)
+          ─▶ Cloudflare Tunnel (https://mirror-origin.<自分のドメイン>)
+          ─▶ Mac: cloudflared ─▶ Node.js サーバー 127.0.0.1:3000 ─▶ iPhone
+```
+
+Tunnel の URL 自体もインターネットから見えますが、Mac サーバーは `ORIGIN_SHARED_SECRET` と一致するヘッダーがない API 呼び出しを拒否するため、Worker 以外からは操作できません。
+Cloudflare に自分のドメインを 1 つ登録している必要があります(Tunnel の公開ホスト名に使います)。
+
+### Mac 側: Tunnel を作る
+
+```sh
+brew install cloudflared
+cloudflared tunnel login                       # ブラウザでドメインを選択
+cloudflared tunnel create iphone-mirror        # 認証情報 ~/.cloudflared/<ID>.json が作られる
+cloudflared tunnel route dns iphone-mirror mirror-origin.<自分のドメイン>
+```
+
+`~/.cloudflared/config.yml` を作成します。
+
+```yaml
+tunnel: iphone-mirror
+credentials-file: /Users/<あなた>/.cloudflared/<ID>.json
+ingress:
+  - hostname: mirror-origin.<自分のドメイン>
+    service: http://127.0.0.1:3000
+  - service: http_status:404
+```
+
+`.env` に追記します(`ORIGIN_SHARED_SECRET` は `openssl rand -hex 32` などで作ったランダムな値)。
+
+```sh
+ORIGIN_SHARED_SECRET=<ランダムな値>
+CLOUDFLARE_TUNNEL_NAME=iphone-mirror
+```
+
+これで `./scripts/start-mac.sh` が Tunnel も一緒に起動します。
+
+### Worker をデプロイする
+
+```sh
+npx wrangler login
+npx wrangler secret put ACCESS_PASSWORD   # ブラウザでログインするときのパスワード(12 文字以上)
+npx wrangler secret put SESSION_SECRET    # openssl rand -hex 32 の出力
+npx wrangler secret put ORIGIN_SECRET     # Mac の .env の ORIGIN_SHARED_SECRET と同じ値
+npx wrangler deploy --var ORIGIN_URL:https://mirror-origin.<自分のドメイン>
+```
+
+表示された `https://iphone-mirror.<アカウント>.workers.dev` を開いてログインします。
+(`wrangler.toml` の `ORIGIN_URL` に書いておけば `--var` は不要です)
+
+- ログイン試行は IP ごとに 60 秒あたり 5 回までに制限されます
+- 画面に「Mac のサーバーに接続できません」と出る: Mac のサーバーと Tunnel が起動しているか確認(`tunnel.log`)
+- 「Worker を拒否しました」と出る: `ORIGIN_SECRET` と `ORIGIN_SHARED_SECRET` が一致していません
+
 ## 使い方
 
 | 操作 | iPhone での動作 |
@@ -147,6 +212,9 @@ npm test                                       # ユニット / API テスト
 ACCESS_PASSWORD=dev-password-123 npm run dev:mock  # 実機なしで UI を確認 (http://127.0.0.1:3000)
 ```
 
+Worker をローカルで試す場合は、上のモックサーバーを `ORIGIN_SHARED_SECRET` 付きで起動し、
+`.dev.vars` に `ORIGIN_URL=http://127.0.0.1:3000` と 3 つの secret を書いて `npm run worker:dev` を実行します(http://127.0.0.1:8787)。
+
 ```
 server/
   index.js          エントリーポイント(.env 読み込み・ドライバー選択)
@@ -154,7 +222,9 @@ server/
   auth.js           パスワード認証・署名付き Cookie・ログイン試行制限
   drivers/wda.js    WebDriverAgent クライアント(W3C Actions でタップ/スワイプ)
   drivers/mock.js   モック端末(SVG で画面を描画)
-public/             フロントエンド(ビルド不要の素の HTML/CSS/JS)
+public/             フロントエンド(ビルド不要の素の HTML/CSS/JS。Worker からも配信)
+worker/src/         Cloudflare Worker(ログイン・画面配信・Mac への中継)
+wrangler.toml       Worker の設定
 scripts/start-mac.sh  Mac 用の一括起動スクリプト
 test/               node:test によるテスト
 ```
